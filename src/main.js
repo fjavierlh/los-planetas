@@ -1,5 +1,5 @@
-import spaceHelmet from "/img/space_helmet_1.png";
-import frame from "/img/frame.webp";
+import spaceHelmet from "/src/assets/img/space_helmet_1.png";
+import frame from "/src/assets/img/frame.webp";
 
 // App initialization
 window.onload = () => {
