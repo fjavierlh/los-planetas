@@ -1,7 +1,5 @@
 import spaceHelmet from "/src/assets/img/space_helmet_1.png";
 import frame from "/src/assets/img/frame.webp";
-import { FaceMesh } from "@mediapipe/face_mesh";
-import "@tensorflow/tfjs";
 
 // App initialization
 window.onload = () => {
@@ -36,9 +34,18 @@ async function detect() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
   };
+  // await import(
+  //   "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.0.0/dist/tf.min.js"
+  // );
+  // const FaceMesh = await import(
+  //   "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js"
+  // );
+  // console.log("FaceMesh", FaceMesh);
+  const faceMesh = new FaceMesh({
+    locateFile: (file) =>
+      `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+  });
 
-
-  const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
   faceMesh.setOptions({
     maxNumFaces: 5,
     refineLandmarks: true,
@@ -77,12 +84,12 @@ async function detect() {
   function drawHelmetOn(face, landmarks) {
     const { x, y, width, height } = face;
     const helmetScale = 4.6;
-    
+
     const leftEye = landmarks[33]; // Índice aproximado del ojo izquierdo
     const rightEye = landmarks[263]; // Índice aproximado del ojo derecho
     const eyeDistance = Math.sqrt(
       Math.pow((rightEye.x - leftEye.x) * canvas.width, 2) +
-      Math.pow((rightEye.y - leftEye.y) * canvas.height, 2)
+        Math.pow((rightEye.y - leftEye.y) * canvas.height, 2)
     );
     const helmetWidth = eyeDistance * helmetScale;
     const aspectRatio = spaceHelmetImg.width / spaceHelmetImg.height;
