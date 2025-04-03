@@ -5,10 +5,10 @@ export default defineConfig({
   base: "/los-planetas/",
   build: {
     rollupOptions: {
-      external: ["@mediapipe/face_mesh"]
+      external: ["@mediapipe/face_mesh", "@tensorflow/tfjs"]
     }
   },
   optimizeDeps: {
-    include: ["@mediapipe/face_mesh"]
+    include: ["@mediapipe/face_mesh", "@tensorflow/tfjs"]
   }
 })

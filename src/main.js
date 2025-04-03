@@ -1,5 +1,7 @@
 import spaceHelmet from "/src/assets/img/space_helmet_1.png";
 import frame from "/src/assets/img/frame.webp";
+import { FaceMesh } from "@mediapipe/face_mesh";
+import "@tensorflow/tfjs";
 
 // App initialization
 window.onload = () => {
@@ -35,8 +37,6 @@ async function detect() {
     canvas.height = video.videoHeight;
   };
 
-  await import("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs");
-  const { FaceMesh } = await import("https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh");
 
   const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
   faceMesh.setOptions({
