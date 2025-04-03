@@ -1,5 +1,5 @@
-import spaceHelmet from "./../public/img/space_helmet_1.png";
-import frame from "./../public/img/frame.webp";
+import spaceHelmet from "/img/space_helmet_1.png";
+import frame from "/img/frame.webp";
 import { FaceMesh } from "@mediapipe/face_mesh";
 import "@tensorflow/tfjs";
 
