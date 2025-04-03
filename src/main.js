@@ -1,17 +1,12 @@
-import spaceHelmet from "./assets/img/space_helmet_1.png";
-import frame from "./assets/img/frame.webp";
-
 // App initialization
 window.onload = () => {
   detect().then(initializeTriggerPhotoButton);
 };
-
 // Image sources
 const spaceHelmetImg = new Image();
-spaceHelmetImg.src = spaceHelmet;
-
+spaceHelmetImg.src = "/los-planetas/public/img/space_helmet_1.png";
 const frameImg = new Image();
-frameImg.src = frame;
+frameImg.src = "/los-planetas/public/img/frame.webp";
 
 // DOM elements
 const canvas = document.querySelector("canvas");
