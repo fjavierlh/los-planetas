@@ -43,10 +43,10 @@ async function detect() {
     minTrackingConfidence: 0.5,
   });
 
-  faceMesh.onResults(onResults);
+  faceMesh.onResults(drawScene);
 
   const context = canvas.getContext("2d");
-  function onResults(results) {
+  function drawScene(results) {
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     drawHelmetsOn(results.multiFaceLandmarks);
