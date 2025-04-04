@@ -106,7 +106,7 @@ function initializeTriggerPhotoButton() {
   document.querySelector("#trigger").addEventListener("click", () => {
     const audio = document.querySelector("audio");
     audio.play();
-    const output = canvas.toDataURL("image/png"); // Exportar en PNG para mayor calidad
+    const output = canvas.toDataURL("image/jpeg", 1.0); // Exportar en PNG para mayor calidad
     const link = document.createElement("a");
     link.href = output;
     link.download = "photo.png";
