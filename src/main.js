@@ -11,6 +11,7 @@ frameImg.src = "/los-planetas/public/img/frame.webp";
 // DOM elements
 const canvas = document.querySelector("canvas");
 const video = document.createElement("video");
+const container = document.querySelector(".container");
 
 async function detect() {
   const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -26,9 +27,8 @@ async function detect() {
   video.onloadedmetadata = () => {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-
-    const aspect = video.videoWidth / video.videoHeight;
-    canvas.style.aspectRatio = aspect;
+    container.style["max-width"] = `${video.videoWidth}px`;
+    
   };
 
   const faceMesh = new FaceMesh({
