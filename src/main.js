@@ -10,8 +10,6 @@ frameImg.src = "/los-planetas/public/img/frame.webp";
 
 // DOM elements
 const canvas = document.querySelector("canvas");
-canvas.style.width = "100%";
-canvas.style.height = "100%";
 const video = document.createElement("video");
 
 async function detect() {
@@ -28,6 +26,9 @@ async function detect() {
   video.onloadedmetadata = () => {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+
+    const aspect = video.videoWidth / video.videoHeight;
+    canvas.style.aspectRatio = aspect;
   };
 
   const faceMesh = new FaceMesh({
