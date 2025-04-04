@@ -29,13 +29,7 @@ async function detect() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
   };
-  // await import(
-  //   "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.0.0/dist/tf.min.js"
-  // );
-  // const FaceMesh = await import(
-  //   "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js"
-  // );
-  // console.log("FaceMesh", FaceMesh);
+
   const faceMesh = new FaceMesh({
     locateFile: (file) =>
       `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
