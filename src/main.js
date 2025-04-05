@@ -1,112 +1,181 @@
 // App initialization
 window.onload = () => {
-  detect().then(initializeTriggerPhotoButton);
+  // Precarga de imágenes para evitar problemas de visualización
+  Promise.all([
+    loadImage("/los-planetas/public/img/space_helmet_1.png"),
+    loadImage("/los-planetas/public/img/frame.webp")
+  ]).then(([helmetImage, frameImage]) => {
+    // Almacenar imágenes precargadas
+    window.spaceHelmetImg = helmetImage;
+    window.frameImg = frameImage;
+    detect().then(initializeTriggerPhotoButton);
+  }).catch(error => {
+    console.error("Error al cargar las imágenes:", error);
+  });
 };
-// Image sources
-const spaceHelmetImg = new Image();
-spaceHelmetImg.src = "/los-planetas/public/img/space_helmet_1.png";
-const frameImg = new Image();
-frameImg.src = "/los-planetas/public/img/frame.webp";
 
-// DOM elements
-const canvas = document.querySelector("canvas");
-const video = document.createElement("video");
-const container = document.querySelector(".container");
-
-async function detect() {
-  const mediaStream = await navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: "user",
-      width: { ideal: 3840 }, // 4K si es compatible
-      height: { ideal: 2160 }, // 4K si es compatible
-    },
+// Función para cargar imágenes de forma asíncrona
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`No se pudo cargar la imagen: ${src}`));
+    img.src = src;
   });
-
-  video.srcObject = mediaStream;
-  video.autoplay = true;
-  video.onloadedmetadata = () => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    container.style["max-width"] = `${video.videoWidth}px`;
-    
-  };
-
-  const faceMesh = new FaceMesh({
-    locateFile: (file) =>
-      `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-  });
-
-  faceMesh.setOptions({
-    maxNumFaces: 5,
-    refineLandmarks: true,
-    minDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5,
-  });
-
-  faceMesh.onResults(drawScene);
-
-  const context = canvas.getContext("2d");
-  function drawScene(results) {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    drawHelmetsOn(results.multiFaceLandmarks);
-    context.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
-  }
-
-  function drawHelmetsOn(faces) {
-    if (!faces) return;
-    faces.forEach((landmarks) => {
-      const faceBox = getBoundingBox(landmarks);
-      drawHelmetOn(faceBox, landmarks);
-    });
-  }
-
-  function getBoundingBox(landmarks) {
-    const xs = landmarks.map((pt) => pt.x * canvas.width);
-    const ys = landmarks.map((pt) => pt.y * canvas.height);
-    const x = Math.min(...xs);
-    const y = Math.min(...ys);
-    const width = Math.max(...xs) - x;
-    const height = Math.max(...ys) - y;
-    return { x, y, width, height };
-  }
-
-  function drawHelmetOn(face, landmarks) {
-    const { x, y, width, height } = face;
-    const helmetScale = 4.6;
-
-    const leftEye = landmarks[33]; // Índice aproximado del ojo izquierdo
-    const rightEye = landmarks[263]; // Índice aproximado del ojo derecho
-    const eyeDistance = Math.sqrt(
-      Math.pow((rightEye.x - leftEye.x) * canvas.width, 2) +
-        Math.pow((rightEye.y - leftEye.y) * canvas.height, 2)
-    );
-    const helmetWidth = eyeDistance * helmetScale;
-    const aspectRatio = spaceHelmetImg.width / spaceHelmetImg.height;
-    const helmetHeight = helmetWidth / aspectRatio;
-
-    context.drawImage(
-      spaceHelmetImg,
-      x + width / 2 - helmetWidth / 2,
-      y + height / 2 - helmetHeight / 2,
-      helmetWidth,
-      helmetHeight
-    );
-  }
-
-  async function processFrame() {
-    await faceMesh.send({ image: video });
-    requestAnimationFrame(processFrame);
-  }
-
-  processFrame();
 }
 
+// Cache de elementos DOM
+const elements = {
+  canvas: document.querySelector("canvas"),
+  video: document.createElement("video"),
+  container: document.querySelector(".container"),
+  trigger: document.querySelector("#trigger"),
+  audio: document.querySelector("audio")
+};
+
+// Constantes para landmarks faciales
+const LANDMARKS = {
+  LEFT_EYE: 33,
+  RIGHT_EYE: 263
+};
+
+// Configuración para FaceMesh
+const FACE_MESH_CONFIG = {
+  maxNumFaces: 5,
+  refineLandmarks: true,
+  minDetectionConfidence: 0.5,
+  minTrackingConfidence: 0.5
+};
+
+async function detect() {
+  try {
+    // Obtener acceso a la cámara con la resolución óptima
+    const mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user",
+        width: { ideal: 3840 }, // 4K si es compatible
+        height: { ideal: 2160 }, // 4K si es compatible
+      },
+    });
+
+    // Configurar el video
+    elements.video.srcObject = mediaStream;
+    elements.video.autoplay = true;
+    
+    // Esperar a que el video esté listo
+    await new Promise(resolve => {
+      elements.video.onloadedmetadata = () => {
+        elements.canvas.width = elements.video.videoWidth;
+        elements.canvas.height = elements.video.videoHeight;
+        elements.container.style["max-width"] = `${elements.video.videoWidth}px`;
+        resolve();
+      };
+    });
+
+    // Inicializar FaceMesh
+    const faceMesh = new FaceMesh({
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+    });
+
+    faceMesh.setOptions(FACE_MESH_CONFIG);
+
+    // Obtener contexto del canvas una sola vez para mejorar rendimiento
+    const context = elements.canvas.getContext("2d");
+    
+    // Función para dibujar la escena
+    faceMesh.onResults((results) => {
+      // Limpiar canvas y dibujar video
+      context.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+      context.drawImage(elements.video, 0, 0, elements.canvas.width, elements.canvas.height);
+      
+      // Dibujar cascos si hay rostros detectados
+      if (results.multiFaceLandmarks) {
+        drawHelmetsOn(context, results.multiFaceLandmarks);
+      }
+      
+      // Dibujar el marco por encima de todo
+      context.drawImage(window.frameImg, 0, 0, elements.canvas.width, elements.canvas.height);
+    });
+
+    // Optimizar el procesamiento de frames con throttling para mejorar rendimiento
+    let lastTimestamp = 0;
+    const frameInterval = 1000 / 30; // Limitar a 30 FPS
+    
+    async function processFrame(timestamp) {
+      // Controlar la tasa de frames
+      if (!lastTimestamp || timestamp - lastTimestamp >= frameInterval) {
+        await faceMesh.send({ image: elements.video });
+        lastTimestamp = timestamp;
+      }
+      requestAnimationFrame(processFrame);
+    }
+
+    requestAnimationFrame(processFrame);
+  } catch (error) {
+    console.error("Error en la detección facial:", error);
+  }
+}
+
+// Función optimizada para dibujar los cascos
+function drawHelmetsOn(context, faces) {
+  if (!faces || !faces.length) return;
+  
+  faces.forEach(landmarks => {
+    // Obtener el cuadro delimitador de la cara
+    const faceBox = getBoundingBox(landmarks);
+    // Dibujar el casco
+    drawHelmetOn(context, faceBox, landmarks);
+  });
+}
+
+// Calcular el cuadro delimitador de la cara
+function getBoundingBox(landmarks) {
+  const xs = landmarks.map(pt => pt.x * elements.canvas.width);
+  const ys = landmarks.map(pt => pt.y * elements.canvas.height);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  const width = Math.max(...xs) - x;
+  const height = Math.max(...ys) - y;
+  return { x, y, width, height };
+}
+
+// Dibujar el casco en una cara
+function drawHelmetOn(context, face, landmarks) {
+  const { x, y, width, height } = face;
+  const helmetScale = 4.6;
+
+  // Calcular distancia entre ojos
+  const leftEye = landmarks[LANDMARKS.LEFT_EYE];
+  const rightEye = landmarks[LANDMARKS.RIGHT_EYE];
+  
+  const eyeDistanceX = (rightEye.x - leftEye.x) * elements.canvas.width;
+  const eyeDistanceY = (rightEye.y - leftEye.y) * elements.canvas.height;
+  const eyeDistance = Math.sqrt(eyeDistanceX * eyeDistanceX + eyeDistanceY * eyeDistanceY);
+  
+  // Calcular dimensiones del casco
+  const helmetWidth = eyeDistance * helmetScale;
+  const aspectRatio = window.spaceHelmetImg.width / window.spaceHelmetImg.height;
+  const helmetHeight = helmetWidth / aspectRatio;
+
+  // Dibujar el casco
+  context.drawImage(
+    window.spaceHelmetImg,
+    x + width / 2 - helmetWidth / 2,
+    y + height / 2 - helmetHeight / 2,
+    helmetWidth,
+    helmetHeight
+  );
+}
+
+// Inicializar el botón de captura de foto
 function initializeTriggerPhotoButton() {
-  document.querySelector("#trigger").addEventListener("click", () => {
-    const audio = document.querySelector("audio");
-    audio.play();
-    const output = canvas.toDataURL("image/jpeg", 1.0); // Exportar en PNG para mayor calidad
+  elements.trigger.addEventListener("click", () => {
+    // Reproducir sonido de obturador
+    elements.audio.play();
+    
+    // Capturar y descargar la imagen
+    const output = elements.canvas.toDataURL("image/png", 1.0);
     const link = document.createElement("a");
     link.href = output;
     link.download = "photo.png";
